@@ -1,74 +1,80 @@
 <!DOCTYPE html>
 <html lang="tr">
-  <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="utf-8">
-    <title>Tek Videolu Stabil WebAR</title>
+    <title>19 Mayıs WebAR - Dikey Video</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; }
-      #ui-layer {
-        position: absolute; top: 10px; left: 10px; width: calc(100% - 20px);
-        text-align: center; color: white; background: rgba(0,0,0,0.6);
-        padding: 10px; z-index: 9999; font-family: sans-serif; border-radius: 8px;
-        pointer-events: none; /* Ekrana tıklamayı engellememesi için */
-      }
+        body { margin: 0; overflow: hidden; }
+        
+        /* Kullanıcı Bilgilendirme Katmanı */
+        #ui-layer {
+            position: absolute; 
+            top: 20px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            text-align: center; 
+            color: white; 
+            background: rgba(0,0,0,0.7);
+            padding: 15px; 
+            z-index: 9999; 
+            font-family: sans-serif; 
+            border-radius: 12px;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
     </style>
-  </head>
-  <body>
+</head>
+<body>
     
-    <div id="ui-layer">Videonun sesini açmak için ekrana dokunun</div>
+    <div id="ui-layer">
+        Kamerayı görsele tutun.<br>
+        <b>Ses için ekrana bir kez dokunun.</b>
+    </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-      
-      <a-assets>
-        <video id="tekVideo" src="./video1.mp4" playsinline webkit-playsinline muted loop crossorigin="anonymous"></video>
-      </a-assets>
-
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-      <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
+    <a-scene 
+        mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.001;" 
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
         
-        <a-video src="#tekVideo" position="0 0 0" width="1" height="0.5625"></a-video>
-        
-      </a-entity>
+        <a-assets>
+            <video id="tekVideo" 
+                   src="./video1.mp4" 
+                   preload="auto"
+                   playsinline 
+                   webkit-playsinline 
+                   muted 
+                   loop 
+                   crossorigin="anonymous">
+            </video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
+            
+            <a-video 
+                src="#tekVideo" 
+                position="0 0 0" 
+                width="0.5625" 
+                height="1" 
+                rotation="0 0 0">
+            </a-video>
+            
+        </a-entity>
     </a-scene>
 
     <script>
-      document.addEventListener("DOMContentLoaded", function() {
-        const hedef = document.querySelector('#hedefNesne');
-        const video = document.querySelector('#tekVideo');
-        const uiLayer = document.querySelector('#ui-layer');
+        document.addEventListener("DOMContentLoaded", function() {
+            const hedef = document.querySelector('#hedefNesne');
+            const video = document.querySelector('#tekVideo');
+            const uiLayer = document.querySelector('#ui-layer');
 
-        // 1. Hedef bulunduğunda videoyu oynat (sessiz olarak başlar)
-        hedef.addEventListener("targetFound", event => {
-          console.log("Hedef algılandı, video oynatılıyor.");
-          video.play().catch(error => {
-            console.warn("Otomatik oynatma engellendi:", error);
-          });
-        });
-
-        // 2. Hedef kaybolduğunda videoyu durdur
-        hedef.addEventListener("targetLost", event => {
-          console.log("Hedef kaybedildi, video duraklatıldı.");
-          video.pause();
-        });
-
-        // 3. Ekrana herhangi bir yere dokunulduğunda sesi aç
-        window.addEventListener('click', () => {
-          if (video.muted) {
-            video.muted = false;
-            uiLayer.innerText = "Ses açıldı!";
-            // 1.5 saniye sonra uyarı yazısını tamamen gizle
-            setTimeout(() => {
-              uiLayer.style.display = 'none';
-            }, 1500);
-          }
-        });
-      });
-    </script>
-  </body>
-</html>
+            // 1. Hedef Bulunduğunda
