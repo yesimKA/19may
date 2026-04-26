@@ -3,78 +3,64 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="utf-8">
-    <title>19 Mayıs WebAR - Dikey Video</title>
-    
+    <title>Hata Ayıklamalı AR</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        body { margin: 0; overflow: hidden; }
-        
-        /* Kullanıcı Bilgilendirme Katmanı */
-        #ui-layer {
-            position: absolute; 
-            top: 20px; 
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            text-align: center; 
-            color: white; 
-            background: rgba(0,0,0,0.7);
-            padding: 15px; 
-            z-index: 9999; 
-            font-family: sans-serif; 
-            border-radius: 12px;
-            pointer-events: none;
-            border: 1px solid rgba(255,255,255,0.2);
+        #debug-log {
+            position: absolute; bottom: 10px; left: 10px; right: 10px;
+            background: rgba(255,0,0,0.8); color: white; padding: 10px;
+            z-index: 10000; font-size: 12px; display: none;
         }
     </style>
 </head>
 <body>
-    
-    <div id="ui-layer">
-        Kamerayı görsele tutun.<br>
-        <b>Ses için ekrana bir kez dokunun.</b>
-    </div>
+
+    <div id="debug-log">Hatalar burada görünecek...</div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.001;" 
-        color-space="sRGB" 
-        renderer="colorManagement: true, physicallyCorrectLights" 
-        vr-mode-ui="enabled: false" 
-        device-orientation-permission-ui="enabled: false">
+        mindar-image="imageTargetSrc: ./targets.mind;" 
+        color-space="sRGB" renderer="colorManagement: true" 
+        vr-mode-ui="enabled: false">
         
         <a-assets>
-            <video id="tekVideo" 
-                   src="./video1" 
-                   preload="auto"
-                   playsinline 
-                   webkit-playsinline 
-                   muted 
-                   loop 
-                   crossorigin="anonymous">
-            </video>
+            <video id="tekVideo" src="video1.mp4" 
+                   preload="auto" playsinline webkit-playsinline muted loop 
+                   crossorigin="anonymous"></video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
         <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
-            
-            <a-video 
-                src="#tekVideo" 
-                position="0 0 0" 
-                width="0.5625" 
-                height="1" 
-                rotation="0 0 0">
-            </a-video>
-            
+            <a-video src="#tekVideo" width="0.5625" height="1" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-            const hedef = document.querySelector('#hedefNesne');
-            const video = document.querySelector('#tekVideo');
-            const uiLayer = document.querySelector('#ui-layer');
+        const video = document.querySelector('#tekVideo');
+        const debug = document.querySelector('#debug-log');
 
-            // 1. Hedef Bulunduğunda
+        // Video yükleme hatasını yakala
+        video.addEventListener('error', (e) => {
+            debug.style.display = 'block';
+            debug.innerText = "HATA: Video dosyası bulunamadı veya oynatılamıyor! Yolun doğru olduğundan emin ol.";
+        });
+
+        // Hedef algılandığında videoyu zorla oynat
+        document.querySelector('#hedefNesne').addEventListener("targetFound", () => {
+            video.play().catch(err => {
+                debug.style.display = 'block';
+                debug.innerText = "OYNATMA HATASI: Ekrana bir kez dokunman gerekiyor.";
+            });
+        });
+
+        // Sayfa tıklandığında sesi aç ve hata kutusunu gizle
+        window.addEventListener('click', () => {
+            video.muted = false;
+            video.play();
+            debug.style.display = 'none';
+        });
+    </script>
+</body>
+</html>
