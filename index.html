@@ -2,26 +2,48 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>19 Mayıs AR Deneyimi</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; touch-action: none; }
+    body, html { 
+      margin: 0; padding: 0; width: 100%; height: 100%; 
+      overflow: hidden; touch-action: none; background-color: #000; 
+    }
+    
+    /* Kritik: Videonun AR dışında, sayfanın üstünde veya altında bağımsız 
+       bir oynatıcı olarak görünmesini/çakışmasını kesin olarak engeller */
+    #tekVideo { 
+      display: none !important; 
+      opacity: 0; 
+      visibility: hidden;
+    }
+    
     #ar-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.8); color: white; display: flex;
+      background: rgba(0,0,0,0.85); color: white; display: flex;
       flex-direction: column; align-items: center; justify-content: center;
       z-index: 9999; font-family: sans-serif;
     }
+    
     #start-button {
       padding: 18px 45px; font-size: 22px; background: #cc0000;
       color: white; border: none; border-radius: 50px; cursor: pointer;
       font-weight: bold; box-shadow: 0 4px 15px rgba(204,0,0,0.4);
+      transition: transform 0.2s;
     }
-    .instruction { margin-top: 20px; font-size: 16px; text-align: center; padding: 0 20px; }
+    
+    #start-button:active { 
+      transform: scale(0.95); 
+    }
+    
+    .instruction { 
+      margin-top: 20px; font-size: 16px; text-align: center; 
+      padding: 0 20px; line-height: 1.5; 
+    }
   </style>
 </head>
 
@@ -39,67 +61,78 @@
     vr-mode-ui="enabled: false" 
     device-orientation-permission-ui="enabled: true">
 
-    <a-assets>
+    <a-assets timeout="10000">
       <video id="tekVideo" 
              src="./video1.mp4" 
              preload="auto" 
              loop="true" 
              playsinline 
              webkit-playsinline 
-             crossorigin="anonymous">
+             crossorigin="anonymous"
+             muted> 
       </video>
     </a-assets>
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0" id="targetEntity">
-      <a-video 
+      <a-plane 
         src="#tekVideo" 
         width="1" 
         height="1.41" 
         position="0 0 0" 
-        rotation="0 0 0">
-      </a-video>
+        rotation="0 0 0"
+        material="transparent: true;">
+      </a-plane>
     </a-entity>
   </a-scene>
 
   <script>
-    const sceneEl = document.querySelector('a-scene');
-    const video = document.querySelector('#tekVideo');
-    const startButton = document.querySelector('#start-button');
-    const overlay = document.querySelector('#ar-overlay');
-    const targetEntity = document.querySelector('#targetEntity');
+    document.addEventListener("DOMContentLoaded", () => {
+      const sceneEl = document.querySelector('a-scene');
+      const video = document.querySelector('#tekVideo');
+      const startButton = document.querySelector('#start-button');
+      const overlay = document.querySelector('#ar-overlay');
+      const targetEntity = document.querySelector('#targetEntity');
 
-    startButton.addEventListener('click', () => {
-      // 1. Arayüzü temizle
-      overlay.style.display = 'none';
+      startButton.addEventListener('click', () => {
+        // 1. Arayüzü temizle
+        overlay.style.display = 'none';
 
-      // 2. iOS Video Unlock (Kritik Adım)
-      // Videoyu sessiz başlatıp hemen durduruyoruz, bu sayede tarayıcı videoyu "güvenli" sayıyor.
-      video.muted = true;
-      video.play().then(() => {
-        video.pause();
-        video.muted = false; // Kullanıcı tıkladığı için ses artık açılabilir
-      }).catch(err => {
-        console.log("Video başlatma hatası:", err);
+        // 2. iOS ve Android Universal Video Unlock
+        // Kullanıcı butona tıkladığında videoyu tetikleyip hemen durduruyoruz.
+        // Bu işlem videoyu tarayıcı gözünde "kullanıcı tarafından başlatıldı" olarak işaretler.
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            video.pause();
+            video.muted = false; // Güvenlik kilidi açıldı, ses aktif ediliyor
+          }).catch(err => {
+            console.warn("Video kilidi açılırken uyarı:", err);
+            video.muted = false; 
+          });
+        }
+
+        // 3. AR Sistemini başlat
+        if (sceneEl.systems['mindar-image-system']) {
+          sceneEl.systems['mindar-image-system'].start();
+        }
       });
 
-      // 3. AR Sistemini başlat
-      if (sceneEl.systems['mindar-image-system']) {
-        sceneEl.systems['mindar-image-system'].start();
-      }
-    });
+      // Hedef Bulunduğunda
+      targetEntity.addEventListener("targetFound", () => {
+        console.log("Görsel yakalandı");
+        // Görüntü hedefe oturduğunda videoyu oynat
+        video.play().catch(e => {
+          console.error("Otomatik oynatma hatası:", e);
+        });
+      });
 
-    // Hedef Bulunduğunda
-    targetEntity.addEventListener("targetFound", () => {
-      console.log("Görsel yakalandı");
-      video.play().catch(e => console.error("Oynatma hatası:", e));
-    });
-
-    // Hedef Kaybolduğunda
-    targetEntity.addEventListener("targetLost", () => {
-      console.log("Görsel kaybedildi");
-      video.pause();
+      // Hedef Kaybolduğunda
+      targetEntity.addEventListener("targetLost", () => {
+        console.log("Görsel kaybedildi");
+        video.pause();
+      });
     });
   </script>
 
