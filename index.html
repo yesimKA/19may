@@ -2,32 +2,26 @@
 <html lang="tr">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>19 Mayıs AR Deneyimi</title>
 
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
 
   <style>
-    body { margin: 0; overflow: hidden; }
-
-    /* Başlat Butonu Katmanı */
+    body { margin: 0; overflow: hidden; touch-action: none; }
     #ar-overlay {
       position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.7); color: white; display: flex;
+      background: rgba(0,0,0,0.8); color: white; display: flex;
       flex-direction: column; align-items: center; justify-content: center;
-      z-index: 999; font-family: sans-serif;
+      z-index: 9999; font-family: sans-serif;
     }
-
     #start-button {
-      padding: 15px 40px; font-size: 20px; background: #cc0000;
-      color: white; border: none; border-radius: 30px; cursor: pointer;
-      font-weight: bold; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+      padding: 18px 45px; font-size: 22px; background: #cc0000;
+      color: white; border: none; border-radius: 50px; cursor: pointer;
+      font-weight: bold; box-shadow: 0 4px 15px rgba(204,0,0,0.4);
     }
-
-    #start-button:active { transform: scale(0.95); }
-    
-    .instruction { margin-top: 15px; font-size: 14px; opacity: 0.8; }
+    .instruction { margin-top: 20px; font-size: 16px; text-align: center; padding: 0 20px; }
   </style>
 </head>
 
@@ -35,7 +29,7 @@
 
   <div id="ar-overlay">
     <button id="start-button">DENEYİMİ BAŞLAT</button>
-    <p class="instruction">Butona bastıktan sonra kamerayı görsele tutun.</p>
+    <p class="instruction">Kameraya izin verin ve görseli taratın.<br><b>iOS kullanıcıları:</b> Sessiz modu kapatmayı unutmayın.</p>
   </div>
 
   <a-scene 
@@ -43,7 +37,7 @@
     color-space="sRGB" 
     renderer="colorManagement: true, physicallyCorrectLights" 
     vr-mode-ui="enabled: false" 
-    device-orientation-permission-ui="enabled: false">
+    device-orientation-permission-ui="enabled: true">
 
     <a-assets>
       <video id="tekVideo" 
@@ -52,7 +46,6 @@
              loop="true" 
              playsinline 
              webkit-playsinline 
-             muted 
              crossorigin="anonymous">
       </video>
     </a-assets>
@@ -60,15 +53,13 @@
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
     <a-entity mindar-image-target="targetIndex: 0" id="targetEntity">
-      
       <a-video 
         src="#tekVideo" 
         width="1" 
         height="1.41" 
-        position="0 0 0.1" 
+        position="0 0 0" 
         rotation="0 0 0">
       </a-video>
-
     </a-entity>
   </a-scene>
 
@@ -79,29 +70,35 @@
     const overlay = document.querySelector('#ar-overlay');
     const targetEntity = document.querySelector('#targetEntity');
 
-    // 1. "Başlat" butonuna basıldığında AR ve Video sistemini uyandır
     startButton.addEventListener('click', () => {
-      overlay.style.display = 'none'; // Arayüzü gizle
-      
-      // AR sistemini başlat
-      sceneEl.systems['mindar-image-system'].start();
-      
-      // Videoyu bir saniyeliğine oynatıp durdur (Tarayıcı kilidini açar)
+      // 1. Arayüzü temizle
+      overlay.style.display = 'none';
+
+      // 2. iOS Video Unlock (Kritik Adım)
+      // Videoyu sessiz başlatıp hemen durduruyoruz, bu sayede tarayıcı videoyu "güvenli" sayıyor.
+      video.muted = true;
       video.play().then(() => {
         video.pause();
-        video.muted = false; // Kullanıcı tıkladığı için artık sesli olabilir
+        video.muted = false; // Kullanıcı tıkladığı için ses artık açılabilir
+      }).catch(err => {
+        console.log("Video başlatma hatası:", err);
       });
+
+      // 3. AR Sistemini başlat
+      if (sceneEl.systems['mindar-image-system']) {
+        sceneEl.systems['mindar-image-system'].start();
+      }
     });
 
-    // 2. Hedef görsel bulunduğunda video başlasın
+    // Hedef Bulunduğunda
     targetEntity.addEventListener("targetFound", () => {
-      console.log("Hedef algılandı!");
-      video.play();
+      console.log("Görsel yakalandı");
+      video.play().catch(e => console.error("Oynatma hatası:", e));
     });
 
-    // 3. Hedef görsel kaybolduğunda video dursun
+    // Hedef Kaybolduğunda
     targetEntity.addEventListener("targetLost", () => {
-      console.log("Hedef kayboldu!");
+      console.log("Görsel kaybedildi");
       video.pause();
     });
   </script>
