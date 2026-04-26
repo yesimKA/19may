@@ -2,63 +2,83 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>AR Image Tracking</title>
+  <title>AR Video Deneyimi</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- A-Frame -->
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-
-  <!-- MindAR -->
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+
+  <style>
+    /* Yükleme ekranı ve butonlar için basit stil */
+    #scanning-overlay {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      left: 0; right: 0; top: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      color: white;
+      z-index: 2;
+    }
+    .hidden { display: none !important; }
+  </style>
 </head>
 
 <body>
-  <a-scene
-    mindar-image="imageTargetSrc: targets.mind;"
-    color-space="sRGB"
-    renderer="colorManagement: true, physicallyCorrectLights"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: true"
-  >
+  <div id="scanning-overlay">
+    <p>Kamerayı Hedef Görsele Tutun...</p>
+  </div>
+
+  <a-scene 
+    mindar-image="imageTargetSrc: ./targets.mind; uiScanning: #scanning-overlay;" 
+    color-space="sRGB" 
+    renderer="colorManagement: true, physicallyCorrectLights" 
+    vr-mode-ui="enabled: false" 
+    device-orientation-permission-ui="enabled: true">
 
     <a-assets>
-      <!-- Video -->
-      <video id="video1" src="video1.mp4" preload="auto" loop muted playsinline></video>
-
-      <!-- Image (istersen fallback olarak kullanırsın) -->
-      <img id="resim1" src="resim1.png">
+      <video id="video1" src="video1.mp4" 
+        preload="auto" loop="true" 
+        muted="true" playsinline webkit-playsinline>
+      </video>
     </a-assets>
 
-    <!-- Kamera -->
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- Target (index 0 = targets.mind içindeki ilk görsel) -->
-    <a-entity mindar-image-target="targetIndex: 0">
-
-      <!-- Video plane -->
-      <a-video
-        src="#video1"
-        width="1"
-        height="0.5625"
-        position="0 0 0"
-        rotation="0 0 0"
-      ></a-video>
-
+    <a-entity id="target1" mindar-image-target="targetIndex: 0">
+      <a-video 
+        src="#video1" 
+        width="1" 
+        height="0.5625" 
+        position="0 0 0" 
+        rotation="0 0 0">
+      </a-video>
     </a-entity>
 
   </a-scene>
 
   <script>
     const video = document.querySelector("#video1");
+    const target = document.querySelector("#target1");
+    const overlay = document.querySelector("#scanning-overlay");
 
-    // Target bulunduğunda videoyu oynat
-    document.querySelector('[mindar-image-target]').addEventListener("targetFound", () => {
+    // Hedef Bulunduğunda
+    target.addEventListener("targetFound", () => {
+      console.log("Hedef bulundu!");
       video.play();
+      overlay.classList.add("hidden"); // Yazıyı gizle
     });
 
-    // Target kaybolduğunda videoyu durdur
-    document.querySelector('[mindar-image-target]').addEventListener("targetLost", () => {
+    // Hedef Kaybolduğunda
+    target.addEventListener("targetLost", () => {
+      console.log("Hedef kayboldu!");
       video.pause();
+      overlay.classList.remove("hidden"); // Yazıyı tekrar göster
+    });
+
+    // Mobil tarayıcılarda ses kısıtlamasını aşmak için ekrana ilk dokunuşta videoyu hazırla
+    window.addEventListener('click', () => {
+        video.muted = false; // Kullanıcı dokunduğunda sesi açabilirsin
     });
   </script>
 
