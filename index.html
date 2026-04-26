@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="tr">
   <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta charset="utf-8">
     <title>Tek Videolu Stabil WebAR</title>
     
@@ -9,20 +9,11 @@
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-      body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
-      
-      /* iOS ve Android tarayıcılarında çift video (hayalet oynatıcı) çıkmasını engeller */
-      #tekVideo { 
-        position: absolute; top: -9999px; left: -9999px;
-        width: 1px; height: 1px; opacity: 0.01;
-        pointer-events: none; z-index: -100;
-      }
-
+      body { margin: 0; overflow: hidden; }
       #ui-layer {
-        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-        width: 80%; max-width: 300px; text-align: center; color: white; 
-        background: rgba(0,0,0,0.7); padding: 12px; z-index: 9999; 
-        font-family: sans-serif; border-radius: 8px; font-size: 15px;
+        position: absolute; top: 10px; left: 10px; width: calc(100% - 20px);
+        text-align: center; color: white; background: rgba(0,0,0,0.6);
+        padding: 10px; z-index: 9999; font-family: sans-serif; border-radius: 8px;
         pointer-events: none; /* Ekrana tıklamayı engellememesi için */
       }
     </style>
@@ -41,13 +32,7 @@
 
       <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
         
-        <a-plane 
-          src="#tekVideo" 
-          position="0 0 0" 
-          width="1" 
-          height="1.41" 
-          material="transparent: true;">
-        </a-plane>
+        <a-video src="#tekVideo" position="0 0 0" width="1" height="0.5625"></a-video>
         
       </a-entity>
     </a-scene>
@@ -76,12 +61,6 @@
         window.addEventListener('click', () => {
           if (video.muted) {
             video.muted = false;
-            // Video kilit açma garantisi (iOS için)
-            const playPromise = video.play();
-            if (playPromise !== undefined) {
-              playPromise.catch(e => console.warn("Kullanıcı tıklamasıyla oynatma hatası:", e));
-            }
-
             uiLayer.innerText = "Ses açıldı!";
             // 1.5 saniye sonra uyarı yazısını tamamen gizle
             setTimeout(() => {
