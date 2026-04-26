@@ -1,75 +1,95 @@
 <!DOCTYPE html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>19 Mayıs AR Deneyimi</title>
-
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-
-  <style>
-    body, html { 
-      margin: 0; padding: 0; width: 100%; height: 100%; 
-      overflow: hidden; touch-action: none; background-color: #000; 
-    }
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta charset="utf-8">
+    <title>Tek Videolu Stabil WebAR</title>
     
-    /* iOS Safari renderını durdurmasın diye display:none yerine ekran dışına itiyoruz */
-    #tekVideo { 
-      position: absolute;
-      top: -9999px;
-      left: -9999px;
-      width: 1px;
-      height: 1px;
-      opacity: 0.01;
-      pointer-events: none;
-      z-index: -100;
-    }
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
-    #ar-overlay {
-      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.85); color: white; display: flex;
-      flex-direction: column; align-items: center; justify-content: center;
-      z-index: 9999; font-family: sans-serif;
-    }
+    <style>
+      body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
+      
+      /* iOS ve Android tarayıcılarında çift video (hayalet oynatıcı) çıkmasını engeller */
+      #tekVideo { 
+        position: absolute; top: -9999px; left: -9999px;
+        width: 1px; height: 1px; opacity: 0.01;
+        pointer-events: none; z-index: -100;
+      }
+
+      #ui-layer {
+        position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+        width: 80%; max-width: 300px; text-align: center; color: white; 
+        background: rgba(0,0,0,0.7); padding: 12px; z-index: 9999; 
+        font-family: sans-serif; border-radius: 8px; font-size: 15px;
+        pointer-events: none; /* Ekrana tıklamayı engellememesi için */
+      }
+    </style>
+  </head>
+  <body>
     
-    #start-button {
-      padding: 18px 45px; font-size: 22px; background: #cc0000;
-      color: white; border: none; border-radius: 50px; cursor: pointer;
-      font-weight: bold; box-shadow: 0 4px 15px rgba(204,0,0,0.4);
-      transition: transform 0.2s;
-    }
-    
-    #start-button:active { 
-      transform: scale(0.95); 
-    }
-    
-    .instruction { 
-      margin-top: 20px; font-size: 16px; text-align: center; 
-      padding: 0 20px; line-height: 1.5; 
-    }
-  </style>
-</head>
+    <div id="ui-layer">Videonun sesini açmak için ekrana dokunun</div>
 
-<body>
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <video id="tekVideo" src="./video1.mp4" playsinline webkit-playsinline muted loop crossorigin="anonymous"></video>
+      </a-assets>
 
-  <script>
-    var ua = navigator.userAgent || navigator.vendor || window.opera;
-    // GitHub, Instagram, Facebook, LinkedIn, Twitter vb. tarayıcıları tespit eder
-    var isInAppBrowser = (ua.indexOf("FBAN") > -1) || (ua.indexOf("FBAV") > -1) || 
-                         (ua.indexOf("Instagram") > -1) || (ua.indexOf("LinkedIn") > -1) || 
-                         (ua.indexOf("Twitter") > -1) || (ua.indexOf("GitHub") > -1);
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    if (isInAppBrowser) {
-      alert("AR deneyimini tam olarak yaşayabilmek ve kameraya erişebilmek için lütfen bu linki cihazınızın kendi tarayıcısında (Safari veya Chrome) açın. Menüden 'Tarayıcıda Aç' (Open in Browser) seçeneğini kullanabilirsiniz.");
-    }
-  </script>
+      <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
+        
+        <a-plane 
+          src="#tekVideo" 
+          position="0 0 0" 
+          width="1" 
+          height="1.41" 
+          material="transparent: true;">
+        </a-plane>
+        
+      </a-entity>
+    </a-scene>
 
-  <div id="ar-overlay">
-    <button id="start-button">DENEYİMİ BAŞLAT</button>
-    <p class="instruction">Kameraya izin verin ve görseli taratın.<br><b>iOS kullanıcıları:</b> Sessiz modu kapatmayı unutmayın.</p>
-  </div>
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const hedef = document.querySelector('#hedefNesne');
+        const video = document.querySelector('#tekVideo');
+        const uiLayer = document.querySelector('#ui-layer');
 
-  <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; autoStart: false; uiScanning: no;" 
-    color-
+        // 1. Hedef bulunduğunda videoyu oynat (sessiz olarak başlar)
+        hedef.addEventListener("targetFound", event => {
+          console.log("Hedef algılandı, video oynatılıyor.");
+          video.play().catch(error => {
+            console.warn("Otomatik oynatma engellendi:", error);
+          });
+        });
+
+        // 2. Hedef kaybolduğunda videoyu durdur
+        hedef.addEventListener("targetLost", event => {
+          console.log("Hedef kaybedildi, video duraklatıldı.");
+          video.pause();
+        });
+
+        // 3. Ekrana herhangi bir yere dokunulduğunda sesi aç
+        window.addEventListener('click', () => {
+          if (video.muted) {
+            video.muted = false;
+            // Video kilit açma garantisi (iOS için)
+            const playPromise = video.play();
+            if (playPromise !== undefined) {
+              playPromise.catch(e => console.warn("Kullanıcı tıklamasıyla oynatma hatası:", e));
+            }
+
+            uiLayer.innerText = "Ses açıldı!";
+            // 1.5 saniye sonra uyarı yazısını tamamen gizle
+            setTimeout(() => {
+              uiLayer.style.display = 'none';
+            }, 1500);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
