@@ -1,43 +1,66 @@
 <!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <title>WebAR Image Tracking</title>
     
-    <title>Küçükçekmece Belediyesi AR Deneyimi</title>
-    
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#151515">
-    <link rel="apple-touch-icon" href="media_klasoru/uygulama_ikonu.png">
-
     <script src="https://aframe.io/releases/1.3.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-TZN6MVBK6K"></script>
-    <script>window.dataLayer=window.dataLayer||[]; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', 'G-TZN6MVBK6K');</script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
 
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; background-color: #0f111a; color: white; touch-action: none; }
-        
-        /* MOBİL STABİLİTE: Videonun sayfada bağımsız oynatıcı olarak çıkmasını kesin engeller */
-        #vid1 { 
-            position: absolute; top: -9999px; left: -9999px; 
-            width: 1px; height: 1px; opacity: 0.01; z-index: -100; pointer-events: none;
-        }
+      body {
+        margin: 0;
+        overflow: hidden;
+      }
+      /* Mobil ve Web'de arka planda fazladan video oynatıcı çıkmasını kesin olarak engeller */
+      #ar-video {
+        display: none !important;
+      }
+    </style>
+  </head>
+  <body>
+    <a-scene 
+      mindar-image="imageTargetSrc: targets.mind; autoStart: true;" 
+      color-space="sRGB" 
+      renderer="colorManagement: true, physicallyCorrectLights" 
+      vr-mode-ui="enabled: false" 
+      device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <video id="ar-video" src="video1.mp4" playsinline webkit-playsinline muted loop crossorigin="anonymous"></video>
+        <img id="ar-image" src="resim1.png" />
+      </a-assets>
 
-        /* 1. KURUMSAL GİRİŞ EKRANI */
-        #loading-screen {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background-color: #12141f; z-index: 10000;
-            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
-            box-sizing: border-box; padding: 20px;
-        }
-        .logo-box img { width: 180px; height: auto; margin-bottom: 25px; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2)); }
-        
-        .kurum-adi { font-size: 1.5em; font-weight: 800; letter-spacing: 1px; color: #fff; margin-bottom: 8px; text-transform: uppercase; line-height: 1.3em; }
-        .uygulama-adi { font-weight: 300; letter-spacing: 3px; font-size: 1em; color: #a0a0a0; margin-bottom: 45px; text-transform: uppercase; }
-        
-        .progress-wrapper { position: relative; width: 80px; height: 80px; display: flex; justify-content: center; align-items: center; }
-        .spinner {
-            position: absolute; width: 100%; height: 100%; border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #0056b3; border-radius: 50%; animation:
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+      <a-entity id="target" mindar-image-target="targetIndex: 0">
+        <a-video 
+          src="#ar-video" 
+          width="1" 
+          height="1.41" 
+          position="0 0 0" 
+          rotation="0 0 0">
+        </a-video>
+      </a-entity>
+
+    </a-scene>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const target = document.querySelector('#target');
+        const video = document.querySelector('#ar-video');
+
+        // Kamera resmi algıladığında videoyu başlat
+        target.addEventListener("targetFound", event => {
+          video.play();
+        });
+
+        // Kamera resimden uzaklaştığında/kaybettiğinde videoyu durdur
+        target.addEventListener("targetLost", event => {
+          video.pause();
+        });
+      });
+    </script>
+  </body>
+</html>
