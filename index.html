@@ -58,29 +58,24 @@
   </a-scene>
 
   <script>
-    const video = document.querySelector("#video1");
-    const target = document.querySelector("#target1");
-    const overlay = document.querySelector("#scanning-overlay");
+   const video = document.querySelector("#video1");
+const target = document.querySelector('[mindar-image-target]');
 
-    // Hedef Bulunduğunda
-    target.addEventListener("targetFound", () => {
-      console.log("Hedef bulundu!");
-      video.play();
-      overlay.classList.add("hidden"); // Yazıyı gizle
-    });
+// Hedef bulunduğunda
+target.addEventListener("targetFound", () => {
+  // Bazı tarayıcılar için videoyu tekrar yükle ve oynat
+  video.muted = true; // Otomatik oynatma için sessize al
+  video.play().catch(error => {
+    console.log("Oynatma hatası:", error);
+  });
+});
 
-    // Hedef Kaybolduğunda
-    target.addEventListener("targetLost", () => {
-      console.log("Hedef kayboldu!");
-      video.pause();
-      overlay.classList.remove("hidden"); // Yazıyı tekrar göster
-    });
+target.addEventListener("targetLost", () => {
+  video.pause();
+});
 
-    // Mobil tarayıcılarda ses kısıtlamasını aşmak için ekrana ilk dokunuşta videoyu hazırla
-    window.addEventListener('click', () => {
-        video.muted = false; // Kullanıcı dokunduğunda sesi açabilirsin
-    });
-  </script>
-
-</body>
-</html>
+// Kullanıcı ekrana dokunduğunda sesi aç ve videoyu garantiye al
+window.addEventListener('click', () => {
+    video.play();
+    video.muted = false; 
+}, { once: true }); // Sadece ilk tıklamada çalışır
