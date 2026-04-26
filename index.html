@@ -3,63 +3,77 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta charset="utf-8">
-    <title>Hata Ayıklamalı AR</title>
+    <title>19 Mayıs AR - Kesin Çözüm</title>
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
     
     <style>
-        #debug-log {
-            position: absolute; bottom: 10px; left: 10px; right: 10px;
-            background: rgba(255,0,0,0.8); color: white; padding: 10px;
-            z-index: 10000; font-size: 12px; display: none;
+        body { margin: 0; overflow: hidden; }
+        /* Başlat butonu: Tarayıcı engelini aşmak için şart */
+        #overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); color: white; display: flex;
+            flex-direction: column; align-items: center; justify-content: center;
+            z-index: 10; font-family: sans-serif; text-align: center;
+        }
+        #start-btn {
+            padding: 15px 30px; font-size: 18px; cursor: pointer;
+            background: #e74c3c; border: none; color: white; border-radius: 50px;
+            font-weight: bold; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
     </style>
 </head>
 <body>
 
-    <div id="debug-log">Hatalar burada görünecek...</div>
+    <div id="overlay">
+        <p>AR Deneyimini Başlatmak İçin</p>
+        <button id="start-btn">BURAYA TIKLAYIN</button>
+    </div>
 
     <a-scene 
-        mindar-image="imageTargetSrc: ./targets.mind;" 
+        mindar-image="imageTargetSrc: ./targets.mind; filterMinCF:0.0001; filterBeta: 0.001;" 
         color-space="sRGB" renderer="colorManagement: true" 
-        vr-mode-ui="enabled: false">
+        vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
         
         <a-assets>
-            <video id="tekVideo" src="video1.mp4" 
-                   preload="auto" playsinline webkit-playsinline muted loop 
-                   crossorigin="anonymous"></video>
+            <video id="tekVideo" src="./video1.mp4" 
+                   preload="auto" playsinline webkit-playsinline 
+                   muted loop crossorigin="anonymous"></video>
         </a-assets>
 
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
+        <a-entity mindar-image-target="targetIndex: 0" id="hedef">
             <a-video src="#tekVideo" width="0.5625" height="1" position="0 0 0"></a-video>
         </a-entity>
     </a-scene>
 
     <script>
         const video = document.querySelector('#tekVideo');
-        const debug = document.querySelector('#debug-log');
+        const overlay = document.querySelector('#overlay');
+        const startBtn = document.querySelector('#start-btn');
+        const hedef = document.querySelector('#hedef');
 
-        // Video yükleme hatasını yakala
-        video.addEventListener('error', (e) => {
-            debug.style.display = 'block';
-            debug.innerText = "HATA: Video dosyası bulunamadı veya oynatılamıyor! Yolun doğru olduğundan emin ol.";
-        });
-
-        // Hedef algılandığında videoyu zorla oynat
-        document.querySelector('#hedefNesne').addEventListener("targetFound", () => {
-            video.play().catch(err => {
-                debug.style.display = 'block';
-                debug.innerText = "OYNATMA HATASI: Ekrana bir kez dokunman gerekiyor.";
+        // 1. BUTONA TIKLANDIĞINDA: Tarayıcı iznini al ve videoyu "hazır" duruma getir
+        startBtn.addEventListener('click', () => {
+            video.play().then(() => {
+                video.pause(); // İzni aldık, şimdi hedef bulunana kadar durabilir
+                overlay.style.display = 'none';
+            }).catch(err => {
+                console.error("Video başlatılamadı:", err);
+                overlay.style.display = 'none';
             });
         });
 
-        // Sayfa tıklandığında sesi aç ve hata kutusunu gizle
-        window.addEventListener('click', () => {
-            video.muted = false;
+        // 2. HEDEF BULUNDUĞUNDA: Videoyu oynat
+        hedef.addEventListener("targetFound", () => {
+            video.muted = false; // Kullanıcı butona tıkladığı için artık sesli oynatabiliriz
             video.play();
-            debug.style.display = 'none';
+        });
+
+        // 3. HEDEF KAYBOLDUĞUNDA: Videoyu durdur (Şarj ve işlemci tasarrufu)
+        hedef.addEventListener("targetLost", () => {
+            video.pause();
         });
     </script>
 </body>
