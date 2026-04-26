@@ -1,81 +1,74 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <title>AR Video Deneyimi</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<html lang="tr">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8">
+    <title>Tek Videolu Stabil WebAR</title>
+    
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    
+    <style>
+      body { margin: 0; overflow: hidden; }
+      #ui-layer {
+        position: absolute; top: 10px; left: 10px; width: calc(100% - 20px);
+        text-align: center; color: white; background: rgba(0,0,0,0.6);
+        padding: 10px; z-index: 9999; font-family: sans-serif; border-radius: 8px;
+        pointer-events: none; /* Ekrana tıklamayı engellememesi için */
+      }
+    </style>
+  </head>
+  <body>
+    
+    <div id="ui-layer">Videonun sesini açmak için ekrana dokunun</div>
 
-  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
+    <a-scene mindar-image="imageTargetSrc: ./targets.mind;" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+      
+      <a-assets>
+        <video id="tekVideo" src="./video1.mp4" playsinline webkit-playsinline muted loop crossorigin="anonymous"></video>
+      </a-assets>
 
-  <style>
-    /* Yükleme ekranı ve butonlar için basit stil */
-    #scanning-overlay {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: absolute;
-      left: 0; right: 0; top: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      color: white;
-      z-index: 2;
-    }
-    .hidden { display: none !important; }
-  </style>
-</head>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-<body>
-  <div id="scanning-overlay">
-    <p>Kamerayı Hedef Görsele Tutun...</p>
-  </div>
+      <a-entity mindar-image-target="targetIndex: 0" id="hedefNesne">
+        
+        <a-video src="#tekVideo" position="0 0 0" width="1" height="0.5625"></a-video>
+        
+      </a-entity>
+    </a-scene>
 
-  <a-scene 
-    mindar-image="imageTargetSrc: ./targets.mind; uiScanning: #scanning-overlay;" 
-    color-space="sRGB" 
-    renderer="colorManagement: true, physicallyCorrectLights" 
-    vr-mode-ui="enabled: false" 
-    device-orientation-permission-ui="enabled: true">
+    <script>
+      document.addEventListener("DOMContentLoaded", function() {
+        const hedef = document.querySelector('#hedefNesne');
+        const video = document.querySelector('#tekVideo');
+        const uiLayer = document.querySelector('#ui-layer');
 
-    <a-assets>
-      <video id="video1" src="video1.mp4" 
-        preload="auto" loop="true" 
-        muted="true" playsinline webkit-playsinline>
-      </video>
-    </a-assets>
+        // 1. Hedef bulunduğunda videoyu oynat (sessiz olarak başlar)
+        hedef.addEventListener("targetFound", event => {
+          console.log("Hedef algılandı, video oynatılıyor.");
+          video.play().catch(error => {
+            console.warn("Otomatik oynatma engellendi:", error);
+          });
+        });
 
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+        // 2. Hedef kaybolduğunda videoyu durdur
+        hedef.addEventListener("targetLost", event => {
+          console.log("Hedef kaybedildi, video duraklatıldı.");
+          video.pause();
+        });
 
-    <a-entity id="target1" mindar-image-target="targetIndex: 0">
-      <a-video 
-        src="#video1" 
-        width="1" 
-        height="0.5625" 
-        position="0 0 0" 
-        rotation="0 0 0">
-      </a-video>
-    </a-entity>
-
-  </a-scene>
-
-  <script>
-   const video = document.querySelector("#video1");
-const target = document.querySelector('[mindar-image-target]');
-
-// Hedef bulunduğunda
-target.addEventListener("targetFound", () => {
-  // Bazı tarayıcılar için videoyu tekrar yükle ve oynat
-  video.muted = true; // Otomatik oynatma için sessize al
-  video.play().catch(error => {
-    console.log("Oynatma hatası:", error);
-  });
-});
-
-target.addEventListener("targetLost", () => {
-  video.pause();
-});
-
-// Kullanıcı ekrana dokunduğunda sesi aç ve videoyu garantiye al
-window.addEventListener('click', () => {
-    video.play();
-    video.muted = false; 
-}, { once: true }); // Sadece ilk tıklamada çalışır
+        // 3. Ekrana herhangi bir yere dokunulduğunda sesi aç
+        window.addEventListener('click', () => {
+          if (video.muted) {
+            video.muted = false;
+            uiLayer.innerText = "Ses açıldı!";
+            // 1.5 saniye sonra uyarı yazısını tamamen gizle
+            setTimeout(() => {
+              uiLayer.style.display = 'none';
+            }, 1500);
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
